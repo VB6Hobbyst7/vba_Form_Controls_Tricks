@@ -186,6 +186,7 @@ Sub RenameControlAndCode(Optional ctr As MSForms.Control)
         If ctr Is Nothing Then
             MsgBox "No control passed as arguement or no 1 control selected in designer"
             Exit Sub
+        End If
     End If
     Dim Module As VBComponent: Set Module = ActiveModule
     If Module.Type <> vbext_ct_MSForm Then Exit Sub
