@@ -1,1 +1,331 @@
 # vba_Tricks_To_Add_Or_Edit_Userform_Controls
+
+
+Public Const ControlIDCheckBox = "Forms.CheckBox.1"
+Public Const ControlIDComboBox = "Forms.ComboBox.1"
+Public Const ControlIDCommandButton = "Forms.CommandButton.1"
+Public Const ControlIDFrame = "Forms.Frame.1"
+Public Const ControlIDImage = "Forms.Image.1"
+Public Const ControlIDLabel = "Forms.Label.1"
+Public Const ControlIDListBox = "Forms.ListBox.1"
+Public Const ControlIDMultiPage = "Forms.MultiPage.1"
+Public Const ControlIDOptionButton = "Forms.OptionButton.1"
+Public Const ControlIDScrollBar = "Forms.ScrollBar.1"
+Public Const ControlIDSpinButton = "Forms.SpinButton.1"
+Public Const ControlIDTabStrip = "Forms.TabStrip.1"
+Public Const ControlIDTextBox = "Forms.TextBox.1"
+Public Const ControlIDToggleButton = "Forms.ToggleButton.1"
+
+
+' Main Procedures
+'''''''''''''''''''''''''''''''''''''''''''''
+' AddFormControls
+' AddMultipleControls
+' EditObjectProperties
+' EditObjectsProperty
+' RenameControlAndCode
+' SortControls
+
+Sub AddFormControls(ControlID As String, _
+                    CountOrArrayOfNames As Variant, _
+                    Optional Captions As Variant = 0, _
+                    Optional Vertical As Boolean = True, _
+                    Optional Offset As Long = 0, _
+                    Optional Form As Object)
+    '''''''''''''''''''''''''''''''''''
+    ' Arguements
+    ''''''''''''''''''''''''''''''''''''
+    ' ControlID - constants for form control types
+    ' CountOrArrayOfNames - If number then create that many controls (auto named)
+    '                                        - else for each element of array create a control
+    ' Captions                         - Each element of captions to each control if possible
+    ' Vertical                          - Control placement
+    ' Offset                              - If you create a column of controls then you'd want the next column to be offset. same for rows
+    ' Form                               - call AddFormControls from userform code and use ME to create temporary controls
+    '                                        - else ommit and call AddFormControls from immediate window while looking at userform designer to create permanent controls
+    
+    ''''''''''''''''''''''''''''''''''''''
+    ' Example calls
+    ''''''''''''''''''''''''''''''''''''''
+    
+    ' Use from immediate window while looking at a userform's designer (permanent)
+    '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+    ' AddFormControls ControlIDCheckBox, Array("Name1","Name2","Name3","Name4")
+    ' AddFormControls ControlIDCheckBox, Array("Name1","Name2"), Array("Caption 1","Caption 2")
+    ' AddFormControls ControlIDCheckBox, 4, Array("Name1","Name2")
+    
+    ' Use from userform code (temporary)
+    '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+    ' AddFormControls ControlIDCheckBox, Array("abc", "zxc"), , ,  , Me
+    
+    If IsNumeric(CountOrArrayOfNames) And IsArray(Captions) Then
+        If UBound(Captions) + 1 <> CLng(CountOrArrayOfNames) Then Exit Sub
+    End If
+    Dim Module As VBComponent
+    If Form Is Nothing Then
+        Set Module = ActiveModule
+        If Module.Type <> vbext_ct_MSForm Then Exit Sub
+    End If
+    
+    Dim c As MSForms.Control
+    If IsNumeric(CountOrArrayOfNames) Then
+        For i = 1 To CLng(CountOrArrayOfNames)
+            If Form Is Nothing Then
+                Set c = Module.Designer.Controls.Add(ControlID)
+            Else
+                Set c = Form.Controls.Add(ControlID)
+            End If
+            If Vertical Then
+                c.Top = i * c.Height + i * 5 - c.Height
+                c.Left = Offset
+            Else
+                c.Top = Offset
+                c.Left = i * c.Width + i * 5 - c.Width
+            End If
+            If IsArray(Captions) Then
+                c.Caption = Captions(i - 1)
+            Else
+                On Error Resume Next
+                c.Caption = CountOrArrayOfNames(i - 1)
+                If c.Caption = "" Then c.Caption = c.Name
+                On Error GoTo 0
+            End If
+        Next
+    Else
+        For i = 1 To UBound(CountOrArrayOfNames) + 1
+            If Form Is Nothing Then
+                Set c = Module.Designer.Controls.Add(ControlID)
+            Else
+                Set c = Form.Controls.Add(ControlID)
+            End If
+            If Vertical Then
+                c.Top = i * c.Height + i * 5 - c.Height
+                c.Left = Offset
+            Else
+                c.Top = Offset
+                c.Left = i * c.Width + i * 5 - c.Width
+            End If
+            c.Name = CountOrArrayOfNames(i - 1)
+            If IsArray(Captions) Then
+                c.Caption = Captions(i - 1)
+            Else
+                On Error Resume Next
+                c.Caption = CountOrArrayOfNames(i - 1)
+                If c.Caption = "" Then c.Caption = c.Name
+                On Error GoTo 0
+            End If
+        Next
+    End If
+End Sub
+
+Sub AddMultipleControls(ControlTypes As Variant, Count As Long, Optional Vertical As Boolean = True, Optional Form As Object = Nothing)
+    'from immediate window
+    ' AddMultiple array(ControlIDCheckBox,ControlIDLabel,ControlIDTextBox),4
+    'from userform code
+    ' AddMultiple array(ControlIDCheckBox,ControlIDLabel,ControlIDTextBox),4
+    Dim i As Long
+    For i = 1 To UBound(ControlTypes) + 1
+        If Vertical Then
+            AddFormControls CStr(ControlTypes(i - 1)), Count, , Vertical, i * 60 - 50, Form
+        Else
+            AddFormControls CStr(ControlTypes(i - 1)), Count, , Vertical, i * 20 - 20, Form
+        End If
+    Next
+    Dim c As MSForms.Control
+    
+    On Error Resume Next
+    If Form Is Nothing Then
+        For Each c In ActiveModule.Designer.Controls
+            If Not TypeName(c) Like "TextBox" Then c.AutoSize = True
+        Next
+    Else
+        For Each c In Form.Controls
+            If Not TypeName(c) Like "TextBox" Then c.AutoSize = True
+        Next
+    End If
+End Sub
+
+Sub EditObjectProperties(obj As Variant, PropertyArguement As Variant)
+
+    Rem EditObjectProperties SelectedControl, Array("left",0,"top",0)
+    Rem For Each c In SelectedControls: EditObjectProperties c, Array("left",0,"top",0): Next
+    Rem for i=1 to SelectedControls.count: EditObjectProperties activemodule.Designer.controls(SelectedControls(i).name),Array("left",0,"top",0): next
+
+    Dim i As Long
+    Do While i < UBound(PropertyArguement)
+        CallByName obj, PropertyArguement(i), VbLet, _
+                            IIf(IsNumeric(PropertyArguement(i + 1)), _
+                            CLng(PropertyArguement(i + 1)), _
+                            PropertyArguement(i + 1))
+        i = i + 2
+    Loop
+End Sub
+
+Sub EditObjectsProperty(obj As Collection, objProperty As String, Args As Variant)
+    ' from immediate window looking at form's designer and 3 controls selected
+    ' EditObjectsProperty SelectedControls,"top", array(0,20,40)
+    If obj.Count <> UBound(Args) + 1 Then
+        MsgBox "Not selected controls count <> arguements count"
+        Exit Sub
+    End If
+    Dim ArgItem
+    Dim i As Long
+    i = obj.Count
+    Dim element As Variant
+    For Each element In obj
+        CallByName element, objProperty, VbLet, _
+                            IIf(IsNumeric(Args(i - 1)), _
+                            CLng(Args(i - 1)), _
+                            Args(i - 1))
+        i = i - 1
+    Next
+End Sub
+
+Sub RenameControlAndCode(Optional ctr As MSForms.Control)
+   ' call from immediate window while looking at userform's designer
+    If ctr Is Nothing Then
+        If SelectedControls.Count = 1 Then Set ctr = SelectedControl
+        If ctr Is Nothing Then
+            MsgBox "No control passed as arguement or no 1 control selected in designer"
+            Exit Sub
+    End If
+    Dim Module As VBComponent: Set Module = ActiveModule
+    If Module.Type <> vbext_ct_MSForm Then Exit Sub
+    Dim OldName As String: OldName = ctr.Name
+    Dim NewName As String: NewName = InputboxString
+    If NewName = "" Then Exit Sub
+    ctr.Name = NewName
+    Dim CountOfLines As Long: CountOfLines = Module.CodeModule.CountOfLines
+    If CountOfLines = 0 Then Exit Sub
+    Dim strLine As String
+    Dim i As Long
+    For i = 1 To CountOfLines
+        strLine = Module.CodeModule.Lines(i, 1)
+        If InStr(1, strLine, OldName) > 0 Then
+            If InStrExact(1, strLine, OldName) > 0 Then
+                Module.CodeModule.ReplaceLine (i), Replace(strLine, OldName, NewName)
+            End If
+        End If
+    Next
+End Sub
+
+Sub SortControls(Optional SortVertically As Boolean = True)
+    Rem call from immediate window while looking at userform's designer AND having controls selected
+    Dim Module As VBComponent
+    Set Module = ActiveModule
+    If Module.Type <> vbext_ct_MSForm Then Exit Sub
+    Dim ctr As MSForms.Control
+    Dim coll As New Collection
+    Dim lastTop As Long
+    Dim lastLeft As Long
+    Dim element As Variant
+    For Each element In SelectedControls
+        coll.Add element.Caption & ";" & element.Name
+    Next
+    Set coll = SortCollection(coll)
+    Dim s As String
+    For i = 1 To coll.Count
+        s = Mid(coll(i), InStr(1, coll(i), ";") + 1)
+        coll.Remove i
+        If i > coll.Count Then
+            coll.Add s, , , i - 1
+        Else
+            coll.Add s, , i
+        End If
+    Next
+    If SortVertically = True Then
+        For Each element In coll
+            Module.Designer.Controls(element).Top = lastTop + 10
+            lastTop = lastTop + Module.Designer.Controls(element).Height + 10
+        Next
+    Else
+        For Each element In coll
+            Module.Designer.Controls(element).Left = lastLeft + 10
+            lastLeft = lastLeft + Module.Designer.Controls(element).Width + 10
+        Next
+    End If
+End Sub
+
+'Helpers
+
+Function InputboxString(Optional sTitle As String = "Select String", Optional sPrompt As String = "Select String", Optional DefaultValue = "") As String
+    Dim stringVariable As String
+    stringVariable = Application.InputBox( _
+                     Title:=sTitle, _
+                     Prompt:=sPrompt, _
+                     Type:=2, _
+                     Default:=DefaultValue)
+    InputboxString = CStr(stringVariable)
+End Function
+
+Sub ResizeUserformToFitControls(Form As Object)
+    Dim ctr As MSForms.Control
+    Dim myWidth
+    myWidth = Form.InsideWidth
+    For Each ctr In Form.Controls
+        If ctr.Left + ctr.Width > myWidth Then myWidth = ctr.Left + ctr.Width
+    Next
+    Form.Width = myWidth + Form.Width - Form.InsideWidth        '+ 10
+    Dim myHeight
+    myHeight = Form.InsideHeight
+    For Each ctr In Form.Controls
+        If ctr.Top + ctr.Height > myHeight Then myHeight = ctr.Top + ctr.Height
+    Next
+    Form.Height = myHeight + Form.Height - Form.InsideHeight        '+ 10
+End Sub
+
+Function SelectedControl() As MSForms.Control
+    Dim Module As VBComponent
+    Set Module = ActiveModule
+    If SelectedControls.Count = 1 Then
+        Dim ctl    As Control
+        For Each ctl In ActiveModule.Designer.Selected
+            Set SelectedControl = ctl
+            Exit Function
+        Next ctl
+    End If
+End Function
+
+Function SelectedControls() As Collection
+    Dim ctl    As Control
+    Dim out As New Collection
+    Dim Module As VBComponent
+    Set Module = ActiveModule
+    For Each ctl In Module.Designer.Selected
+        out.Add ctl
+    Next ctl
+    Set SelectedControls = out
+    Set out = Nothing
+End Function
+
+Function ActiveModule() As VBComponent
+    Set ActiveModule = Application.VBE.SelectedVBComponent
+End Function
+
+Function InStrExact(Start As Long, SourceText As String, WordToFind As String, _
+                    Optional CaseSensitive As Boolean = False, _
+                    Optional AllowAccentedCharacters As Boolean = False) As Long
+    Dim x As Long, Str1 As String, Str2 As String, Pattern As String
+    Const UpperAccentsOnly As String = "ÇÉÑ"
+    Const UpperAndLowerAccents As String = "ÇÉÑçéñ"
+    If CaseSensitive Then
+        Str1 = SourceText
+        Str2 = WordToFind
+        Pattern = "[!A-Za-z0-9]"
+        If AllowAccentedCharacters Then Pattern = Replace(Pattern, "!", "!" & UpperAndLowerAccents)
+    Else
+        Str1 = UCase(SourceText)
+        Str2 = UCase(WordToFind)
+        Pattern = "[!A-Z0-9]"
+        If AllowAccentedCharacters Then Pattern = Replace(Pattern, "!", "!" & UpperAccentsOnly)
+    End If
+    For x = Start To Len(Str1) - Len(Str2) + 1
+        If Mid(" " & Str1 & " ", x, Len(Str2) + 2) Like Pattern & Str2 & Pattern _
+                                                   And Not Mid(Str1, x) Like Str2 & "'[" & Mid(Pattern, 3) & "*" Then
+            InStrExact = x
+            Exit Function
+        End If
+    Next
+End Function
+
+
