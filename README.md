@@ -1,1 +1,14 @@
-# vba_Tricks_To_Add_Or_Edit_Userform_Controls
+# Tricks to add and edit form controls
+
+
+' AddFormControls
+
+' AddMultipleControls
+
+' EditObjectProperties
+
+' EditObjectsProperty
+
+' RenameControlAndCode
+
+' SortControls
