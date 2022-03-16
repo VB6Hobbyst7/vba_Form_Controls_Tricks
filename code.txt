@@ -148,8 +148,10 @@ Sub EditObjectProperties(obj As Variant, PropertyArguement As Variant)
     Rem EditObjectProperties SelectedControl, Array("left",0,"top",0)
     Rem For Each c In SelectedControls: EditObjectProperties c, Array("left",0,"top",0): Next
     Rem for i=1 to SelectedControls.count: EditObjectProperties activemodule.Designer.controls(SelectedControls(i).name),Array("left",0,"top",0): next
-
+    Rem for for each c in selectedcontrols: EditObjectProperties c,Array("left",0,"top",0): next
+    
     Dim i As Long
+    On Error Resume Next
     Do While i < UBound(PropertyArguement)
         CallByName obj, PropertyArguement(i), VbLet, _
                             IIf(IsNumeric(PropertyArguement(i + 1)), _
@@ -186,7 +188,7 @@ Sub RenameControlAndCode(Optional ctr As MSForms.Control)
         If ctr Is Nothing Then
             MsgBox "No control passed as arguement or no 1 control selected in designer"
             Exit Sub
-        End If
+         End If
     End If
     Dim Module As VBComponent: Set Module = ActiveModule
     If Module.Type <> vbext_ct_MSForm Then Exit Sub
@@ -258,6 +260,8 @@ Function InputboxString(Optional sTitle As String = "Select String", Optional sP
 End Function
 
 Sub ResizeUserformToFitControls(Form As Object)
+    Form.Width = 10
+    Form.Height = 10
     Dim ctr As MSForms.Control
     Dim myWidth
     myWidth = Form.InsideWidth
@@ -326,5 +330,28 @@ Function InStrExact(Start As Long, SourceText As String, WordToFind As String, _
         End If
     Next
 End Function
-
+Sub DeleteAllControls()
+    Dim Module As VBComponent
+    Set Module = ActiveModule
+    Dim c As MSForms.Control
+    For Each c In Module.Designer.Controls
+        Module.Designer.Controls.Remove c.Name
+    Next
+End Sub
+Public Function SortCollection(colInput As Collection) As Collection
+    Dim iCounter As Integer
+    Dim iCounter2 As Integer
+    Dim temp As Variant
+    Set SortCollection = New Collection
+    For iCounter = 1 To colInput.Count - 1
+        For iCounter2 = iCounter + 1 To colInput.Count
+            If colInput(iCounter) > colInput(iCounter2) Then
+                temp = colInput(iCounter2)
+                colInput.Remove iCounter2
+                colInput.Add temp, temp, iCounter
+            End If
+        Next iCounter2
+    Next iCounter
+    Set SortCollection = colInput
+End Function
 
